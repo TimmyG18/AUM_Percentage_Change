@@ -1,4 +1,4 @@
-This Program aims to slove the AUM analysis in the most layma-friendly way. It does not require any installation to run the program.
+This Program aims to slove the AUM analysis in the most layman-friendly way. It does not require any installation to run the program.
 Procedure:
 1. Go to https://colab.research.google.com/
 2. Sign in with any google account
