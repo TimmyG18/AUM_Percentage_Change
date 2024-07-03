@@ -5,8 +5,8 @@ output_file='result.xlsx'
 df1=pd.read_excel(file1)
 df2=pd.read_excel(file2)
 merged_df = df1.copy(deep=True)
-merged_df = pd.concat([df1, pd.DataFrame(columns=[f'Column {i+1}' for i in range(5)])], axis=1)
-merged_df.columns=['Fund Name', 'Former Units', 'Former Bid Price', 'Former Amount(USD)', 'Later Units', 'Later Bid Price', 'Later Amount(USD)', 'Percentage Change in Bid', 'Percentage Change in Amount']
+merged_df = pd.concat([df1, pd.DataFrame(columns=[f'Column {i+1}' for i in range(6)])], axis=1)
+merged_df.columns=['Fund Name', 'Former Units', 'Former Bid Price', 'Former Amount(USD)', 'Later Units', 'Later Bid Price', 'Later Amount(USD)', '% Percentage Change in Bid', '% Percentage Change in Amount', '% Effect of Price Change on the Total Change of AUM']
 for i, row in merged_df.iterrows():
     fund_name = row['Fund Name']
     if fund_name in df2['Fund Name'].values:
@@ -39,12 +39,24 @@ for s, row in merged_df.iterrows():
     later_amount = row['Later Amount(USD)']
 
     if former_bid == 0 or later_bid == 0:
-        merged_df.at[s, 'Percentage Change in Bid'] = 'NA'
+        merged_df.at[s, '% Percentage Change in Bid'] = 'NA'
     else:
-        merged_df.at[s, 'Percentage Change in Bid'] = ((later_bid - former_bid) / former_bid) * 100
+        merged_df.at[s, '% Percentage Change in Bid'] = ((later_bid - former_bid) / former_bid) * 100
 
     if former_amount == 0 or later_amount == 0:
-        merged_df.at[s, 'Percentage Change in Amount'] = 'NA'
+        merged_df.at[s, '% Percentage Change in Amount'] = 'NA'
     else:
-        merged_df.at[s, 'Percentage Change in Amount'] = ((later_amount - former_amount) / former_amount) * 100            
+        merged_df.at[s, '% Percentage Change in Amount'] = ((later_amount - former_amount) / former_amount) * 100       
+merged_df.at[15, 15] = 'Former Total AUM: '
+merged_df.at[15, 16] = df1['Amount(USD)'].sum()
+merged_df.at[16, 15] = 'Later Total AUM: '
+merged_df.at[16, 16] = df2['Amount(USD)'].sum()
+merged_df.at[17, 15] = '% Percentage Change in AUM: '
+merged_df.at[17, 16] = ((merged_df.at[16, 16]-merged_df.at[15, 16]) / merged_df.at[15, 16])*100
+merged_df.at[18,15] = 'Formula to get the % effect of price change on the total change of AUM=(% change in bid)*(Former Amount)/(Change in total AUM). Negative number indicates the movement of price change and AUM change is opposite.'
+for t, row in merged_df.iterrows():
+    if merged_df.loc[t, '% Percentage Change in Bid'] != 'NA':
+        merged_df.loc[t, '% Effect of Price Change on the Total Change of AUM'] = ((merged_df.loc[t, '% Percentage Change in Bid'] * merged_df.loc[t, 'Former Amount(USD)'])/(merged_df.at[16, 16]-merged_df.at[15, 16]))
+    else:
+        continue
 merged_df.to_excel(output_file, index=False)
