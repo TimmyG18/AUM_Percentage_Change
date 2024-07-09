@@ -30,8 +30,8 @@ for r, row in df2.iterrows():
           'Later Units':df2.loc[r, 'Units Owned'],
           'Later Bid Price':df2.loc[r, 'Bid Price'],
           'Later Amount(USD)':df2.loc[r, 'Amount(USD)'],
-      }  
-      merged_df = pd.concat([merged_df, pd.DataFrame([new_row])], ignore_index=True)  
+      }
+      merged_df = pd.concat([merged_df, pd.DataFrame([new_row])], ignore_index=True)
 for s, row in merged_df.iterrows():
     former_bid = row['Former Bid Price']
     later_bid = row['Later Bid Price']
@@ -46,17 +46,31 @@ for s, row in merged_df.iterrows():
     if former_amount == 0 or later_amount == 0:
         merged_df.at[s, '% Percentage Change in Amount'] = 'NA'
     else:
-        merged_df.at[s, '% Percentage Change in Amount'] = ((later_amount - former_amount) / former_amount) * 100       
+        merged_df.at[s, '% Percentage Change in Amount'] = ((later_amount - former_amount) / former_amount) * 100
+def weighted_average(merged_df):
+    average = 0
+    total = df2['Amount(USD)'].sum()
+    for u, row in merged_df.iterrows():
+        effect_pct = merged_df.loc[u, '% Effect of Price Change on the Total Change of AUM'] 
+        if pd.isnull(effect_pct) or effect_pct == 0:
+            continue    
+        weight = merged_df.loc[u, 'Later Amount(USD)'] / total
+        average += weight * effect_pct  
+    return average 
+weighted_avg = weighted_average(merged_df)        
 merged_df.at[15, 15] = 'Former Total AUM: '
 merged_df.at[15, 16] = df1['Amount(USD)'].sum()
 merged_df.at[16, 15] = 'Later Total AUM: '
 merged_df.at[16, 16] = df2['Amount(USD)'].sum()
 merged_df.at[17, 15] = '% Percentage Change in AUM: '
 merged_df.at[17, 16] = ((merged_df.at[16, 16]-merged_df.at[15, 16]) / merged_df.at[15, 16])*100
-merged_df.at[18,15] = 'Formula to get the % effect of price change on the total change of AUM=(% change in bid)*(Former Amount)/(Change in total AUM). Negative number indicates the movement of price change and AUM change is opposite.'
+merged_df.at[19, 15] = '* Formula to get the % effect of price change on the total change of AUM=(% change in bid)*(Former Amount)/(Change in total AUM). Negative number indicates AUM change is negatively correlated with the movement of price.'
+merged_df.at[18, 15] = 'Weighted average effect of price change on change of total AUM: '
+merged_df.at[18, 16] = weighted_avg
+merged_df.at[20, 15] = '* Weighted average effect of price change on change of total AUM=(individual later amount)/(later total AUM)*individual effect of price change.'
 for t, row in merged_df.iterrows():
     if merged_df.loc[t, '% Percentage Change in Bid'] != 'NA':
-        merged_df.loc[t, '% Effect of Price Change on the Total Change of AUM'] = ((merged_df.loc[t, '% Percentage Change in Bid'] * merged_df.loc[t, 'Former Amount(USD)'])/(merged_df.at[16, 16]-merged_df.at[15, 16]))
+        merged_df.loc[t, '% Effect of Price Change on the Total Change of AUM'] = ((merged_df.loc[t, '% Percentage Change in Bid'] * merged_df.loc[t, 'Former Amount(USD)']) / (merged_df.at[16, 16]-merged_df.at[15, 16]))
     else:
         continue
 merged_df.to_excel(output_file, index=False)
